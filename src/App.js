@@ -1,25 +1,74 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import "./App.css";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
+import { auth } from "./config/firebase.config";
+const App = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [user, setUser] = useState(null);
 
-function App() {
+  const signUpAction = async () => {
+    await createUserWithEmailAndPassword(auth, email, password).then(
+      async (userCredential) => {
+        const user = userCredential.user;
+
+        await sendEmailVerification(user);
+        console.log("Success");
+      }
+    );
+  };
+
+  useEffect(() => {
+    auth.onAuthStateChanged((userCredential) => {
+      const { email, emailVerified } = userCredential;
+      setUser({ email, emailVerified });
+    });
+  }, []);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <main>
+      <div className="container">
+        <InputField
+          type={email}
+          placeholder={"Email Here"}
+          handleChange={(data) => setEmail(data)}
+        />
+        <InputField
+          type={password}
+          placeholder={"Password Here"}
+          handleChange={(data) => setPassword(data)}
+        />
+        <button type="button" onClick={signUpAction}>
+          Sign Up
+        </button>
+      </div>
+
+      {user && (
+        <div>
+          <p>{user?.email}</p>
+          <p>{user.emailVerified ? "True" : "False"}</p>
+        </div>
+      )}
+    </main>
   );
-}
+};
+
+const InputField = ({ placeholder, handleChange, type }) => {
+  const [inputValue, setInputValue] = useState("");
+  const handleChangeEvent = (e) => {
+    setInputValue(e.target.value);
+    handleChange(e.target.value);
+  };
+  return (
+    <input
+      value={inputValue}
+      type={type}
+      placeholder={placeholder}
+      onChange={handleChangeEvent}
+    />
+  );
+};
 
 export default App;
